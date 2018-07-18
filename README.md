@@ -1,4 +1,4 @@
-# @dojo/cli-upgrade
+# @dojo/cli-upgrade-app
 
 ## Usage
 

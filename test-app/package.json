@@ -1,0 +1,34 @@
+{
+  "name": "test-app",
+  "version": "1.0.0",
+  "scripts": {
+    "install-cli-upgrade-app": "npm install --no-save ../dist/dojo-cli-upgrade-app.tgz",
+    "build:dist": "dojo build --mode dist",
+    "build:dev": "dojo build --mode dev",
+    "build:dist:evergreen": "dojo build --mode dist --legacy false",
+    "build:dev:evergreen": "dojo build --mode dev --legacy false",
+    "build:test": "dojo build --mode test"
+  },
+  "dependencies": {
+    "@dojo/core": "^2.0.0",
+    "@dojo/has": "^2.0.0",
+    "@dojo/shim": "^2.0.0",
+    "@dojo/i18n": "^2.0.0",
+    "@dojo/widget-core": "^2.0.0",
+    "@dojo/routing": "^2.0.0",
+    "@dojo/stores": "^2.0.0",
+    "@dojo/widgets": "^2.0.0",
+    "tslib": "~1.8.1"
+  },
+  "devDependencies": {
+    "@dojo/cli-build-app": "^2.0.0",
+    "@dojo/cli-test-intern": "^2.0.0",
+    "@dojo/test-extras": "^2.0.0",
+    "@types/glob": "~5.0.0",
+    "@types/grunt": "~0.4.0",
+    "@types/node": "^6.0.46",
+    "@types/sinon": "^1.16.35",
+    "intern": "~4.1.5",
+    "typescript": "~2.6.1"
+  }
+}
