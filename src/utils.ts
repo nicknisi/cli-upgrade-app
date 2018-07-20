@@ -1,10 +1,11 @@
 import chalk from 'chalk';
-import { readFile as nodeReadFile } from 'fs';
+import { readFile as nodeReadFile, writeFile as nodeWriteFile } from 'fs';
 import { promisify } from 'util';
 const { spawn }: any = require('cross-spawn');
 const ora: any = require('ora');
 
 export const readfile = promisify(nodeReadFile);
+export const writefile = promisify(nodeWriteFile);
 
 export function run(command: string, args?: string[], resolveOnErrors?: boolean): Promise<string> {
 	return new Promise((resolve, reject) => {

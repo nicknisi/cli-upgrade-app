@@ -1,5 +1,6 @@
 import { Command, OptionsHelper, Helper } from '@dojo/cli/interfaces';
 import npmUpdate from './npmUpdate';
+import updateImports from './updateImports';
 
 export const command: Command = {
 	group: 'upgrade',
@@ -21,10 +22,12 @@ export const command: Command = {
 		});
 	},
 	async run(helper: Helper, args: any): Promise<void> {
-		console.log({ helper, args });
-		if (!args.skipNpm) {
+		const { skipNpm, path } = args;
+		if (!skipNpm) {
 			await npmUpdate();
 		}
+
+		updateImports(path);
 	}
 };
 
