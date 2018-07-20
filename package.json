@@ -30,5 +30,18 @@
     "shx": "~0.3.2",
     "tslint": "~5.8.0",
     "typescript": "2.6.1"
+  },
+  "dependencies": {
+    "chalk": "~2.4.1",
+    "cross-spawn": "~6.0.5",
+    "ora": "~3.0.0"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "tabWidth": 4,
+    "useTabs": true,
+    "parser": "typescript",
+    "printWidth": 120,
+    "arrowParens": "always"
   }
 }
