@@ -27,7 +27,8 @@ export const command: Command = {
 			await npmUpdate();
 		}
 
-		updateImports(path);
+		console.log('calling updateImports with', path);
+		await updateImports(path);
 	}
 };
 

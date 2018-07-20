@@ -59,6 +59,7 @@ export default async function updateImports(pattern: string): Promise<void> {
 	files.forEach(async (path) => {
 		const source = await readfile(path, { encoding: 'utf8' });
 		const updatedSource = transform({ path, source }, { jscodeshift });
+		console.log(updatedSource);
 		await writefile(path, updatedSource);
 	});
 }

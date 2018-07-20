@@ -37,9 +37,9 @@
     "chalk": "~2.4.1",
     "cross-spawn": "~6.0.5",
     "glob": "~7.1.2",
-    "jscodeshift": "~0.5.1",
+    "jscodeshift": "^0.5.1",
     "ora": "~3.0.0",
-    "recast": "~0.15.2"
+    "recast": "^0.15.0"
   },
   "prettier": {
     "singleQuote": true,
