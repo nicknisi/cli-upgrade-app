@@ -33,14 +33,13 @@
     "typescript": "2.6.1"
   },
   "dependencies": {
-    "@babel/generator": "~7.0.0-beta.54",
-    "@babel/parser": "~7.0.0-beta.54",
-    "@babel/traverse": "~7.0.0-beta.54",
-    "@babel/types": "~7.0.0-beta.54",
+    "babylon": "^7.0.0-beta.47",
     "chalk": "~2.4.1",
     "cross-spawn": "~6.0.5",
     "glob": "~7.1.2",
-    "ora": "~3.0.0"
+    "jscodeshift": "~0.5.1",
+    "ora": "~3.0.0",
+    "recast": "~0.15.2"
   },
   "prettier": {
     "singleQuote": true,
