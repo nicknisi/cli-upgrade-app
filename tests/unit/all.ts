@@ -1,2 +1,2 @@
 import './main';
-import './transforms/module-transform-to-framework';
+// import './transforms/module-transform-to-framework';

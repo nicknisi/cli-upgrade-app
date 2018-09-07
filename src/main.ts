@@ -1,42 +1,13 @@
 import { Command, Helper, OptionsHelper } from '@dojo/cli/interfaces';
-import chalk from 'chalk';
+import { getCurrentVersion } from './utils';
 import * as inquirer from 'inquirer';
-const Runner = require('jscodeshift/src/Runner');
-const path = require('path');
+const runner = require('jscodeshift/src/Runner');
 const glob = require('glob');
 
-const packages = [
-	'@dojo/core',
-	'@dojo/has',
-	'@dojo/i18n',
-	'@dojo/widget-core',
-	'@dojo/routing',
-	'@dojo/stores',
-	'@dojo/shim',
-	'@dojo/test-extras'
-];
+const LATEST_VERSION = 3;
 
-async function run(opts: any) {
-	try {
-		await command.__runner.run(opts.transform, opts.path, opts);
-	} catch (e) {
-		throw Error('Failed to upgrade');
-	}
-	const packageString = packages.join(' ');
-	console.log('');
-	console.log(
-		chalk.bold.green(
-			'Upgrade complete, you can now add the new dojo/framework dependency and safely remove deprecated dependencies with the following:'
-		)
-	);
-	console.log('install the dojo framework package:');
-	console.log(`    ${chalk.yellow('npm install @dojo/framework')}`);
-	console.log('remove legacy packages:');
-	console.log(`    ${chalk.yellow('npm uninstall -S -D ' + packageString)}`);
-}
-
-const command: Command & { __runner: any } = {
-	__runner: Runner,
+const command: Command & { runner: any } = {
+	runner,
 	group: 'upgrade',
 	name: 'app',
 	description: 'upgrade your application to a newer Dojo version',
@@ -53,22 +24,33 @@ const command: Command & { __runner: any } = {
 			type: 'boolean',
 			default: false
 		});
+		options('to', {
+			describe: 'the version to upgrade to',
+			type: 'number'
+		});
+		options('yes', {
+			describe: 'Accept defaults for all options',
+			type: 'boolean',
+			alias: 'y',
+			default: false
+		});
 	},
-	run: async (helper: Helper, args: { pattern: string; dry: boolean }) => {
-		const { pattern, dry } = args;
+	async run(
+		this: Command & { runner: any },
+		helper: Helper,
+		args: { pattern: string; dry: boolean; to: string; yes: boolean }
+	) {
+		const { pattern, dry, to, yes } = args;
 		const paths = glob.sync(pattern);
 		const hasJSX = paths.some((p: string) => p.match(/\.tsx$/g));
-		const opts = {
-			parser: hasJSX ? 'typescript-jsx' : 'typescript',
-			transform: path.resolve(__dirname, 'transforms', 'module-transform-to-framework.js'),
-			path: paths,
-			verbose: 0,
-			babel: false,
-			dry,
-			extensions: 'js',
-			runInBand: false,
-			silent: false
-		};
+		const opts = { paths, hasJSX, dry, yes, runner: this.runner };
+		const fromVersion = await getCurrentVersion();
+		const toVersion = to || LATEST_VERSION;
+
+		if (toVersion <= fromVersion) {
+			throw Error(`Attempt to upgrade from v${fromVersion} to v${toVersion} not allowed. Exiting.`);
+		}
+
 		if (!dry) {
 			const answer = await inquirer.prompt({
 				type: 'confirm',
@@ -80,9 +62,24 @@ const command: Command & { __runner: any } = {
 			if (!(answer as any).run) {
 				throw Error('Aborting upgrade');
 			}
-			return await run(opts);
 		}
-		return await run(opts);
+
+		const actions: Promise<void>[] = [];
+		for (let i = fromVersion + 1; i <= toVersion; ++i) {
+			actions.push(
+				(async () => {
+					let run;
+					try {
+						run = (await import(`./v${i}/main`)).default;
+					} catch {}
+
+					if (run) {
+						await run(opts);
+					}
+				})()
+			);
+		}
+		await Promise.all(actions);
 	}
 };
 

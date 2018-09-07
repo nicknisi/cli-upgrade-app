@@ -20,7 +20,7 @@ describe('main', () => {
 	it('should run with dry option', async () => {
 		promptStub(true);
 		let output: any = {};
-		command.__runner = {
+		command.runner = {
 			run(transform: string, path: string, opts: any) {
 				output = opts;
 			}
@@ -32,7 +32,7 @@ describe('main', () => {
 	it('should run with pattern option', async () => {
 		promptStub(true);
 		let output: any = {};
-		command.__runner = {
+		command.runner = {
 			run(transform: string, path: string, opts: any) {
 				output = opts;
 			}
@@ -45,7 +45,7 @@ describe('main', () => {
 		promptStub(false);
 		let called = false;
 		let message: undefined | string;
-		command.__runner = {
+		command.runner = {
 			run(transform: string, path: string, opts: any) {
 				called = true;
 			}
