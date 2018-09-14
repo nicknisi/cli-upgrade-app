@@ -1,6 +1,6 @@
-const { run: runTransform } = require('jscodeshift/src/Runner');
 import chalk from 'chalk';
 import { resolve } from 'path';
+import { RunnerOptions } from '../interfaces';
 
 const packages = [
 	'@dojo/core',
@@ -13,17 +13,7 @@ const packages = [
 	'@dojo/test-extras'
 ];
 
-interface DefaultOptions {
-	pattern: string;
-	paths: string[];
-	dry?: boolean;
-	yes?: boolean;
-	hasJSX?: boolean;
-}
-
-interface RunOptions extends DefaultOptions {}
-
-export async function run(args: RunOptions) {
+export async function run(args: RunnerOptions, runner: any) {
 	console.log('running v3');
 	const transform = resolve(__dirname, 'transforms', 'module-transform-to-framework.js');
 	const opts = {
@@ -39,7 +29,7 @@ export async function run(args: RunOptions) {
 	};
 
 	try {
-		await runTransform(opts.transform, opts.path, opts);
+		await runner.run(opts.transform, opts.path, opts);
 	} catch {
 		throw Error('Failed to upgrade');
 	}

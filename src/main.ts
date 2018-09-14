@@ -1,16 +1,24 @@
+import { RunnerFunction } from './interfaces';
 import { Command, Helper, OptionsHelper } from '@dojo/cli/interfaces';
-import { getCurrentVersion } from './utils';
 import * as inquirer from 'inquirer';
 const runner = require('jscodeshift/src/Runner');
 const glob = require('glob');
 
 const LATEST_VERSION = 3;
 
-const command: Command & { runner: any } = {
+interface UpgradeCommand extends Command {
+	runner: any;
+	getVersionScript(version: number): Promise<RunnerFunction>;
+}
+
+const command: UpgradeCommand = {
 	runner,
 	group: 'upgrade',
 	name: 'app',
 	description: 'upgrade your application to a newer Dojo version',
+	async getVersionScript(version: number) {
+		return (await import(`./v${version}/main`)).default;
+	},
 	register(options: OptionsHelper) {
 		options('pattern', {
 			describe: 'glob pattern of source files to transform',
@@ -24,9 +32,15 @@ const command: Command & { runner: any } = {
 			type: 'boolean',
 			default: false
 		});
+		options('from', {
+			describe: 'the version to upgrade from',
+			type: 'number',
+			default: 2
+		});
 		options('to', {
 			describe: 'the version to upgrade to',
-			type: 'number'
+			type: 'number',
+			default: LATEST_VERSION
 		});
 		options('yes', {
 			describe: 'Accept defaults for all options',
@@ -36,16 +50,14 @@ const command: Command & { runner: any } = {
 		});
 	},
 	async run(
-		this: Command & { runner: any },
+		this: UpgradeCommand,
 		helper: Helper,
-		args: { pattern: string; dry: boolean; to: string; yes: boolean }
+		args: { pattern: string; dry: boolean; to: number; from: number; yes: boolean }
 	) {
-		const { pattern, dry, to, yes } = args;
+		const { pattern, dry, to: toVersion, from: fromVersion, yes } = args;
 		const paths = glob.sync(pattern);
 		const hasJSX = paths.some((p: string) => p.match(/\.tsx$/g));
-		const opts = { paths, hasJSX, dry, yes, runner: this.runner };
-		const fromVersion = await getCurrentVersion();
-		const toVersion = to || LATEST_VERSION;
+		const opts = { paths, hasJSX, dry, yes };
 
 		if (toVersion <= fromVersion) {
 			throw Error(`Attempt to upgrade from v${fromVersion} to v${toVersion} not allowed. Exiting.`);
@@ -70,11 +82,11 @@ const command: Command & { runner: any } = {
 				(async () => {
 					let run;
 					try {
-						run = (await import(`./v${i}/main`)).default;
+						run = await this.getVersionScript(i);
 					} catch {}
 
 					if (run) {
-						await run(opts);
+						await run(opts, this.runner);
 					}
 				})()
 			);
