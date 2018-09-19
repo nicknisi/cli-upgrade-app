@@ -1,9 +1,17 @@
+import { Migration } from './interfaces';
 import { Command, Helper, OptionsHelper } from '@dojo/cli/interfaces';
 import chalk from 'chalk';
 import * as inquirer from 'inquirer';
 const Runner = require('jscodeshift/src/Runner');
-const path = require('path');
 const glob = require('glob');
+
+const LATEST_VERSION = 3;
+
+interface UpgradeCommand extends Command {
+	__runner: any;
+	runTransforms(transforms: string[], paths: string[], options: any): Promise<void>;
+	getVersionScript(version: number): Promise<Migration>;
+}
 
 const packages = [
 	'@dojo/core',
@@ -16,7 +24,7 @@ const packages = [
 	'@dojo/test-extras'
 ];
 
-async function run(opts: any) {
+export async function run(opts: any) {
 	try {
 		await command.__runner.run(opts.transform, opts.path, opts);
 	} catch (e) {
@@ -34,8 +42,28 @@ async function run(opts: any) {
 	console.log('remove legacy packages:');
 	console.log(`    ${chalk.yellow('npm uninstall -S -D ' + packageString)}`);
 }
+async function runTransforms(transforms: string[], paths: string[], options: any = {}) {
+	const opts = {
+		verbose: 0,
+		babel: false,
+		extensions: 'js',
+		runInBand: false,
+		silent: false,
+		...options
+	};
 
-const command: Command & { __runner: any } = {
+	await Promise.all(
+		transforms.map(async (transform) => {
+			try {
+				await Runner.run(transform, paths, opts);
+			} catch (e) {
+				throw Error('Failed to upgrade');
+			}
+		})
+	);
+}
+
+const command: any = {
 	__runner: Runner,
 	group: 'upgrade',
 	name: 'app',
@@ -53,22 +81,40 @@ const command: Command & { __runner: any } = {
 			type: 'boolean',
 			default: false
 		});
+		options('from', {
+			describe: 'the version to upgrade from',
+			type: 'number',
+			default: 2
+		});
+		options('to', {
+			describe: 'the version to upgrade to',
+			type: 'number',
+			default: LATEST_VERSION
+		});
+		options('yes', {
+			describe: 'Accept defaults for all options',
+			type: 'boolean',
+			alias: 'y',
+			default: false
+		});
 	},
-	run: async (helper: Helper, args: { pattern: string; dry: boolean }) => {
-		const { pattern, dry } = args;
+	async getVersionScript(version: number) {
+		return (await import(`./v${version}/main`)).default;
+	},
+	async run(
+		this: UpgradeCommand,
+		helper: Helper,
+		args: { pattern: string; dry: boolean; from: number; to: number; yes: boolean }
+	) {
+		const { pattern, dry, to: toVersion, from: fromVersion } = args;
 		const paths = glob.sync(pattern);
 		const hasJSX = paths.some((p: string) => p.match(/\.tsx$/g));
-		const opts = {
-			parser: hasJSX ? 'typescript-jsx' : 'typescript',
-			transform: path.resolve(__dirname, 'transforms', 'module-transform-to-framework.js'),
-			path: paths,
-			verbose: 0,
-			babel: false,
-			dry,
-			extensions: 'js',
-			runInBand: false,
-			silent: false
-		};
+		const parser = hasJSX ? 'typescript-jsx' : 'typescript';
+
+		if (toVersion <= fromVersion) {
+			throw Error(`Attempt to upgrade from v${fromVersion} to v${toVersion} not allowed. Exiting.`);
+		}
+
 		if (!dry) {
 			const answer = await inquirer.prompt({
 				type: 'confirm',
@@ -80,9 +126,19 @@ const command: Command & { __runner: any } = {
 			if (!(answer as any).run) {
 				throw Error('Aborting upgrade');
 			}
-			return await run(opts);
 		}
-		return await run(opts);
+
+		let transforms: string[] = [];
+
+		for (let i = fromVersion + 1; i <= toVersion; ++i) {
+			try {
+				const { transforms: versionTransforms } = await this.getVersionScript(i);
+				transforms = transforms.concat(versionTransforms);
+			} catch {}
+		}
+
+		console.log('this', this);
+		runTransforms(transforms, paths, { parser, dry });
 	}
 };
 
